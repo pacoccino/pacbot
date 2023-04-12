@@ -20,6 +20,7 @@
   "type": "module",
   "dependencies": {
     "dotenv": "^16.0.3",
+    "fluent-ffmpeg": "^2.1.2",
     "node-telegram-bot-api": "^0.61.0",
     "openai": "^3.2.1",
     "simple-json-db": "^2.0.0"

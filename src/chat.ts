@@ -1,45 +1,38 @@
-import {
-  Configuration,
-  OpenAIApi,
-  ChatCompletionRequestMessageRoleEnum,
-} from 'openai';
-import JSONdb from 'simple-json-db';
+import {OpenAIApi, ChatCompletionRequestMessageRoleEnum} from 'openai'
+import JSONdb from 'simple-json-db'
 
-import {Bot, UserMessage} from './bot';
-import config from './config';
-import TelegramBot from 'node-telegram-bot-api';
+import {Bot, UserMessage} from './bot'
+import config from './config'
+import TelegramBot from 'node-telegram-bot-api'
+import {openai} from './libs'
 
-const AVAILABLE_MODELS = ['gpt-4', 'gpt-3.5-turbo'];
+const AVAILABLE_MODELS = ['gpt-4', 'gpt-3.5-turbo']
 
 interface ChatDbModel {
-  total_tokens: number;
-  systemMessage: string;
-  model: string;
-  temperature: number;
-  max_tokens: number;
+  total_tokens: number
+  systemMessage: string
+  model: string
+  temperature: number
+  max_tokens: number
   history: Array<{
-    role: ChatCompletionRequestMessageRoleEnum;
-    content: string;
-  }>;
+    role: ChatCompletionRequestMessageRoleEnum
+    content: string
+  }>
 }
 
 export class Chat {
-  bot: Bot;
-  tbot: TelegramBot;
-  db: JSONdb;
-  openai: OpenAIApi;
+  bot: Bot
+  tbot: TelegramBot
+  db: JSONdb
+  openai: OpenAIApi
 
   constructor(bot: Bot) {
-    this.bot = bot;
-    this.tbot = this.bot.telegramBot;
+    this.bot = bot
+    this.tbot = this.bot.telegramBot
 
-    this.db = new JSONdb('./storage.json'); // todo
+    this.db = new JSONdb('./data/storage.json') // todo
 
-    this.openai = new OpenAIApi(
-      new Configuration({
-        apiKey: process.env.OPENAI_API_KEY,
-      })
-    );
+    this.openai = openai
   }
 
   protected async getChat(chatId: number): Promise<ChatDbModel> {
@@ -52,32 +45,33 @@ export class Chat {
           max_tokens: config.max_tokens,
           systemMessage: config.defaultSystemMessage,
           history: [],
-        };
+        }
   }
 
   protected async updateChat(chatId: number, val: ChatDbModel): Promise<void> {
-    this.db.set(`${chatId}`, val);
+    this.db.set(`${chatId}`, val)
   }
 
   protected getSystemMessage(systemMessage: string): string {
-    if (systemMessage === '') systemMessage = config.defaultSystemMessage;
+    if (systemMessage === '') systemMessage = config.defaultSystemMessage
 
-    systemMessage += ` Current date and time is ${new Date().toString()}`;
+    systemMessage += ` Current date and time is ${new Date().toString()}`
 
-    return systemMessage;
+    return systemMessage
   }
 
   async chat(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
 
-    let message = userMessage.parsedMessage.hasCommand
-      ? userMessage.parsedMessage.arg
-      : userMessage.text;
+    let questionMessage = userMessage.commandArg
 
     let newHistory: ChatDbModel['history'] = [
       ...chat.history,
-      {role: ChatCompletionRequestMessageRoleEnum.User, content: message},
-    ];
+      {
+        role: ChatCompletionRequestMessageRoleEnum.User,
+        content: questionMessage,
+      },
+    ]
 
     const completionRequest = {
       model: chat.model,
@@ -90,25 +84,32 @@ export class Chat {
         },
         ...newHistory,
       ],
-    };
+    }
 
-    const {data} = await this.openai.createChatCompletion(completionRequest);
+    const {data} = await this.openai.createChatCompletion(completionRequest)
     // TODO handle finish_reason
-    console.log('openai data', data);
+    console.log('openai data', data)
 
-    const cc = data.choices[0];
-    newHistory.push(cc.message);
+    const chatResponse = data.choices[0].message
+    newHistory.push(chatResponse)
 
     await this.updateChat(userMessage.chatId, {
       ...chat,
       total_tokens: data.usage.total_tokens,
       history: newHistory,
-    });
+    })
 
-    await this.tbot.sendMessage(userMessage.chatId, cc.message.content, {
+    let messageContent = ''
+    if (userMessage.transcribed) {
+      messageContent += `🗣️ ${questionMessage}`
+      messageContent += `\n\n`
+    }
+    messageContent += `🤖 ${chatResponse.content}`
+
+    await this.tbot.sendMessage(userMessage.chatId, messageContent, {
       reply_to_message_id: userMessage.msgId,
       //parse_mode: 'Markdown',
-    });
+    })
     /*
             await this.tbot.editMessageText(response.choices[0].message.content, {
                 chat_id: chatId,
@@ -119,7 +120,7 @@ export class Chat {
   }
 
   async info(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
 
     let response = `
             Informations
@@ -134,17 +135,17 @@ export class Chat {
             - History length: ${chat.history.length}
             - Total tokens: ${chat.total_tokens}
             - System Message: ${this.getSystemMessage(chat.systemMessage)}
-            `;
+            `
 
     await this.tbot.sendMessage(userMessage.chatId, response, {
       reply_to_message_id: userMessage.msgId,
       //parse_mode: 'MarkdownV2',
-    });
+    })
   }
   async dump(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
 
-    const buffer = Buffer.from(JSON.stringify(chat));
+    const buffer = Buffer.from(JSON.stringify(chat))
 
     await this.tbot.sendDocument(
       userMessage.chatId,
@@ -156,15 +157,15 @@ export class Chat {
         contentType: 'application/json',
         filename: 'conversation.json',
       }
-    );
+    )
   }
 
   async reset(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
     await this.updateChat(userMessage.chatId, {
       ...chat,
       history: [],
-    });
+    })
 
     await this.tbot.sendMessage(
       userMessage.chatId,
@@ -172,34 +173,34 @@ export class Chat {
       {
         reply_to_message_id: userMessage.msgId,
       }
-    );
+    )
   }
 
   async setSystem(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
 
     await this.updateChat(userMessage.chatId, {
       ...chat,
-      systemMessage: userMessage.parsedMessage.arg,
-    });
+      systemMessage: userMessage.commandArg,
+    })
 
     const res =
-      userMessage.parsedMessage.arg === ''
+      userMessage.commandArg === ''
         ? 'System message have been reset to default.'
-        : 'System message have been changed.';
+        : 'System message have been changed.'
 
     await this.tbot.sendMessage(
       userMessage.chatId,
-      `${res}\nPlease reset conversation to make it effective.`,
+      `${res}\nPlease reset conversation if you want to make it effective.`,
       {
         reply_to_message_id: userMessage.msgId,
       }
-    );
+    )
   }
   async setModel(userMessage: UserMessage) {
-    const chat = await this.getChat(userMessage.chatId);
+    const chat = await this.getChat(userMessage.chatId)
 
-    const newModel = userMessage.parsedMessage.arg;
+    const newModel = userMessage.commandArg
 
     if (AVAILABLE_MODELS.indexOf(newModel) === -1) {
       await this.tbot.sendMessage(
@@ -208,13 +209,13 @@ export class Chat {
         {
           reply_to_message_id: userMessage.msgId,
         }
-      );
-      return;
+      )
+      return
     }
     await this.updateChat(userMessage.chatId, {
       ...chat,
       model: newModel,
-    });
+    })
 
     await this.tbot.sendMessage(
       userMessage.chatId,
@@ -222,6 +223,6 @@ export class Chat {
       {
         reply_to_message_id: userMessage.msgId,
       }
-    );
+    )
   }
 }
