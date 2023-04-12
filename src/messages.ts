@@ -12,54 +12,53 @@ export class MessageHandler {
   }
 
   async handle(userMessage: UserMessage, bot: Bot) {
-    console.log(userMessage)
-    if (userMessage.commandArg) {
-      switch (userMessage.commandName) {
-        case 'start':
-          const text =
-            'Hello, This bot gives you AI-powered answers using ChatGPT. \nAvailable commands are:\n\n/newchat - Start a new chat'
+    switch (userMessage.commandName) {
+      case 'start':
+        const text =
+          'Hello, This bot gives you AI-powered answers using ChatGPT. \nAvailable commands are:\n\n/newchat - Start a new chat'
+        await bot.telegramBot.sendMessage(userMessage.chatId, text, {
+          reply_to_message_id: userMessage.msgId,
+        })
+        break
+      case '':
+      case 'chat':
+        if (userMessage.commandArg === '') {
+          const text = 'Empty or not supported type of message.'
           await bot.telegramBot.sendMessage(userMessage.chatId, text, {
             reply_to_message_id: userMessage.msgId,
           })
-          break
-        case '':
-        case 'chat':
+        } else {
           await this.chat.chat(userMessage)
-          break
-        case 'reset':
-          await this.chat.reset(userMessage)
-          break
+        }
+        break
+      case 'reset':
+        await this.chat.reset(userMessage)
+        break
 
-        case 'info':
-          await this.chat.info(userMessage)
-          break
+      case 'info':
+        await this.chat.info(userMessage)
+        break
 
-        case 'system':
-          await this.chat.setSystem(userMessage)
-          break
+      case 'system':
+        await this.chat.setSystem(userMessage)
+        break
 
-        case 'dump':
-          await this.chat.dump(userMessage)
-          break
+      case 'dump':
+        await this.chat.dump(userMessage)
+        break
 
-        case 'model':
-          await this.chat.setModel(userMessage)
-          break
+      case 'model':
+        await this.chat.setModel(userMessage)
+        break
 
-        default:
-          await bot.telegramBot.sendMessage(
-            userMessage.chatId,
-            'Unknown command.',
-            {
-              reply_to_message_id: userMessage.msgId,
-            }
-          )
-      }
-    } else {
-      const text = 'Empty or not supported type of message.'
-      await bot.telegramBot.sendMessage(userMessage.chatId, text, {
-        reply_to_message_id: userMessage.msgId,
-      })
+      default:
+        await bot.telegramBot.sendMessage(
+          userMessage.chatId,
+          'Unknown command.',
+          {
+            reply_to_message_id: userMessage.msgId,
+          }
+        )
     }
   }
 }

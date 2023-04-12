@@ -1,0 +1,11 @@
+.env
+data
+
+node_modules
+.idea
+
+dist
+
+storage.json
+
+.DS_Store
