@@ -6,6 +6,8 @@ RUN apk add ffmpeg
 
 WORKDIR /app
 
+RUN mkdir -p ./data/voices
+
 COPY package*.json ./
 
 RUN npm install

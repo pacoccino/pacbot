@@ -12,6 +12,7 @@ export class MessageHandler {
   }
 
   async handle(userMessage: UserMessage, bot: Bot) {
+    console.log(userMessage)
     switch (userMessage.commandName) {
       case 'start':
         const text =
