@@ -1,8 +1,6 @@
 - store messages in another db
 - queue request open ai ?
 - limit token size
-- pm2
-- docker
 - do not delete conversation on reset
 - finish_reason, answer not finished ?
 - markdown formatting
