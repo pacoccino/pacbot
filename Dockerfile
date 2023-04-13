@@ -1,7 +1,8 @@
-FROM node:18
+FROM node:18-alpine
 
-RUN apt update
-RUN apt install -y ffmpeg
+RUN apk update
+RUN apk add
+RUN apk add ffmpeg
 
 WORKDIR /app
 
