@@ -7,6 +7,7 @@ import {ReadStream} from 'fs'
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import {openai} from './libs'
+import { v4 as uuidv4 } from 'uuid';
 
 export interface UserMessage {
   msgId: number
@@ -104,8 +105,7 @@ export class Bot {
   }
 
   static async transcriptAudio(voiceStream: Readable): Promise<string> {
-    const outputFile = `./data/voices/temp.mp3`
-
+    const outputFile = `./data/voices/${uuidv4()}.mp3`
     const file = await new Promise<ReadStream>((res, rej) => {
       ffmpeg(voiceStream)
         .toFormat('mp3')
