@@ -129,6 +129,7 @@ export class Chat {
 
             - Temperature: ${chat.temperature}
             - Max tokens: ${chat.max_tokens}
+            - Model: ${chat.model}
 
             Chat stats
 
@@ -200,18 +201,31 @@ export class Chat {
   async setModel(userMessage: UserMessage) {
     const chat = await this.getChat(userMessage.chatId)
 
+    const availables = `Available: [ ${AVAILABLE_MODELS.join(', ')} ]`
     const newModel = userMessage.commandArg
 
-    if (AVAILABLE_MODELS.indexOf(newModel) === -1) {
+    if(newModel === '') {
       await this.tbot.sendMessage(
         userMessage.chatId,
-        `Unknown model.\nAvailable: [ ${AVAILABLE_MODELS.join(', ')} ]`,
+        `Current model in use is ${chat.model}.\nUse this command with a model name to change.\n${availables}`,
         {
           reply_to_message_id: userMessage.msgId,
         }
       )
       return
     }
+
+    if (AVAILABLE_MODELS.indexOf(newModel) === -1) {
+      await this.tbot.sendMessage(
+        userMessage.chatId,
+        `Unknown model.\n${availables}`,
+        {
+          reply_to_message_id: userMessage.msgId,
+        }
+      )
+      return
+    }
+
     await this.updateChat(userMessage.chatId, {
       ...chat,
       model: newModel,
