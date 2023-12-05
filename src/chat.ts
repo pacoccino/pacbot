@@ -6,8 +6,6 @@ import config from './config'
 import TelegramBot from 'node-telegram-bot-api'
 import {openai} from './libs'
 
-const AVAILABLE_MODELS = ['gpt-4', 'gpt-3.5-turbo']
-
 interface ChatDbModel {
   total_tokens: number
   systemMessage: string
@@ -201,24 +199,12 @@ export class Chat {
   async setModel(userMessage: UserMessage) {
     const chat = await this.getChat(userMessage.chatId)
 
-    const availables = `Available: [ ${AVAILABLE_MODELS.join(', ')} ]`
     const newModel = userMessage.commandArg
 
     if(newModel === '') {
       await this.tbot.sendMessage(
         userMessage.chatId,
-        `Current model in use is ${chat.model}.\nUse this command with a model name to change.\n${availables}`,
-        {
-          reply_to_message_id: userMessage.msgId,
-        }
-      )
-      return
-    }
-
-    if (AVAILABLE_MODELS.indexOf(newModel) === -1) {
-      await this.tbot.sendMessage(
-        userMessage.chatId,
-        `Unknown model.\n${availables}`,
+        `Current model in use is ${chat.model}.\nUse this command with a model name to change.`,
         {
           reply_to_message_id: userMessage.msgId,
         }
